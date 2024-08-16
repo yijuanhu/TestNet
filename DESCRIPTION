@@ -1,12 +1,12 @@
 Package: TestNet
 Type: Package
-Title: A general testing method for inference of microbial networks with compositional data
+Title: A testing method for inferring microbial networks using compositional data with false discovery rate control
 Version: 1.0
 Authors@R: 
     person("Yi-Juan", "Hu", role = c("aut", "cre"), email = "yijuan.hu@emory.edu")
-Description: TestNet is a testing method for inferring microbial networks that provides calibrated results by controlling the false discovery rate. It accounts for the features of compositionality, sparsity, and overdispersion in microbiome read count data. It accommodates both independent and clustered samples, offers separate linear and nonlinear tests, and includes an omnibus test that eliminates the need to pre-specify the type of relationship.
+Description: TestNet is a testing method for inferring microbial networks. It differs from existing microbial network analyses in that it provides calibrated results by controlling the false discovery rate. TestNet accounts for the features of compositionality, sparsity, and overdispersion in taxa count data. It also accommodates both independent and clustered samples, offers separate linear and nonlinear tests for each pair of taxa, and includes an omnibus test that bypasses the need to pre-specify the type of relationship for each pair of taxa.
 License: GPL (>=2)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 Depends: R (>= 3.5.0)
 Imports:
     permute,

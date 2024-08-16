@@ -1,34 +1,34 @@
-#' A testing method for inference of microbial networks
+#' A testing method for inferring microbial networks
 #' 
-#' This function generates a p-value and q-value for each (linear, nonlinear, and omnibus) test of a pair of taxa.
+#' This function generates a p-value and a q-value for each (linear, nonlinear, or omnibus) test of a pair of taxa.
 #' 
-#' @param otu.tab the \code{n.obs} by \code{n.otu} matrix of read counts. 
-#' @param clustered.data a logical variable indicating whether the samples are clustered. The default is FALSE. 
-#' @param CTRL the phylogeneic tree. The default is NULL.
-#' @param fdr.nominal the nominal FDR level. The default is 0.1. 
-#' @param n.perm.max the maximum number of permutation replicates. The default is NULL, in which case a maximum of \code{n.otu} * \code{n.rej.stop} * (1/\code{fdr.nominal}) are used, where \code{n.rej.stop} is set to 20. 
-#' @param seed a single-value integer seed for the random process of drawing permutation replicates. 
-#' The seed is user supplied or internally generated. The default is 123.
+#' @param otu.tab An \code{n.sam} by \code{n.otu} matrix of read counts. 
+#' @param clustered.data A logical variable indicating whether the samples are clustered. The default is FALSE. 
+#' @param cluster.id An array of \code{n.sam} cluster identifiers, used in the permutation procedure to shuffle the samples as a whole across clusters and simultaneously shuffle the samples within clusters when \code{clustered.data=TRUE}. The default is NULL.
+#' @param fdr.nominal The nominal FDR level. The default is 0.1. 
+#' @param n.perm.max The maximum number of permutation replicates. The default is NULL, in which case a maximum of \code{n.otu} * \code{n.rej.stop} * (1/\code{fdr.nominal}) are used, where \code{n.rej.stop} is set to 20. 
+#' @param seed a single-value integer seed for the random process of drawing permutation replicates. The default is 123.
 #' @return a list consisting of 
-#'   \item{p.linear}{a \code{n.otu} by \code{n.otu} matrix of p-values for the linear test}
-#'   \item{q.linear}{a matrix of q-values for the linear test}
-#'   \item{p.nonlinear}{a matrix of p-values for the nonlinear test}
-#'   \item{q.nonlinear}{a matrix of q-values for the nonlinear test}
-#'   \item{p.omni}{a matrix of p-values for the omnibus test}
-#'   \item{q.omni}{a matrix of q-values for the omnibus test}
-#'   \item{which.pmin}{a \code{n.otu} by \code{n.otu} matrix of 0, 1, and 2 values, where 0 and 1 indicate that the nonlinear and linear tests, 
+#'   \item{p.linear}{An \code{n.otu} by \code{n.otu} matrix of p-values for the linear tests}
+#'   \item{q.linear}{An \code{n.otu} by \code{n.otu} matrix of q-values for the linear tests}
+#'   \item{p.nonlinear}{An \code{n.otu} by \code{n.otu} matrix of p-values for the nonlinear tests}
+#'   \item{q.nonlinear}{An \code{n.otu} by \code{n.otu} matrix of q-values for the nonlinear tests}
+#'   \item{p.omni}{An \code{n.otu} by \code{n.otu} matrix of p-values for the omnibus tests}
+#'   \item{q.omni}{An \code{n.otu} by \code{n.otu} matrix of q-values for the omnibus tests}
+#'   \item{which.pmin}{An \code{n.otu} by \code{n.otu} matrix of 0, 1, and 2 values, where 0 and 1 indicate that the nonlinear and linear tests, 
 #' respectively, achieved the minimum p-value between the two, and 2 indicates that both tests yielded similar p-values.}
 #' @keywords microbiome, network
 #' @author Yi-Juan Hu <yijuan.hu@emory.edu>
-#' @importFrom permute shuffleSet
+#' @importFrom permute shuffleSet how Plots Within
 #' @importFrom stats p.adjust
 #' @import matrixStats
 #' @export
 #' @references Su C, He M, Van Doren VE, Kelley CF, Hu YJ (2024). A general testing method for inference of microbial networks with compositional data.
 #'   XXX.
 #' @examples
+#' data(sim.otu.tab)
 #' TestNet.res <- TestNet(otu.tab = sim.otu.tab)
-TestNet <- function(otu.tab, clustered.data = FALSE, CTRL = NULL, fdr.nominal = 0.1, n.perm.max = NULL, seed = 123) {
+TestNet <- function(otu.tab, clustered.data = FALSE, cluster.id = NULL, fdr.nominal = 0.1, n.perm.max = NULL, seed = 123) {
     
     n <- nrow(otu.tab)
     J1 <- ncol(otu.tab)
@@ -91,6 +91,7 @@ TestNet <- function(otu.tab, clustered.data = FALSE, CTRL = NULL, fdr.nominal = 
     
     if (clustered.data) {
         ttl <- J1*1000
+        CTRL = how( plots=Plots(cluster.id, type="free"), within=Within(type="free"))
         perm.ttl <- t(shuffleSet(n, ttl, CTRL))
     } else {
         ttl <- J1*1000
@@ -234,7 +235,7 @@ TestNet <- function(otu.tab, clustered.data = FALSE, CTRL = NULL, fdr.nominal = 
                 
             if (!any(Aset.l1) & !any(Aset.l0) & !any(Aset.omni)) {
                 otu.tests.stopped = TRUE 
-                cat("otu test stopped at permutation", i.sim, "\n")
+                cat("test stopped at permutation", i.sim, "\n")
                 break
             }
         } 

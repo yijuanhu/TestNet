@@ -2,5 +2,8 @@
 
 export(TestNet)
 import(matrixStats)
+importFrom(permute,Plots)
+importFrom(permute,Within)
+importFrom(permute,how)
 importFrom(permute,shuffleSet)
 importFrom(stats,p.adjust)

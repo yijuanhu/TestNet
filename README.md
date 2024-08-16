@@ -1,9 +1,9 @@
 # TestNet
 
-The TestNet package implements the testing method, called TestNet, for inference of microbial networks. TestNet provides calibrated results by controlling the false discovery rate. It accounts for the features of compositionality, sparsity, and overdispersion in microbiome read count data. It accommodates both independent and clustered samples, offers separate linear and nonlinear tests, and includes an omnibus test that eliminates the need to pre-specify the type of relationship.
+The TestNet package implements the testing method, TestNet, for inferring microbial networks. It differs from existing microbial network analyses in that it provides calibrated results by controlling the false discovery rate. TestNet accounts for the features of compositionality, sparsity, and overdispersion in taxa count data. It also accommodates both independent and clustered samples, offers separate linear and nonlinear tests for each pair of taxa, and includes an omnibus test that bypasses the need to pre-specify the type of relationship for each pair of taxa.
 
 
 To install the package:
 
-devtools::install_github("yijuanhu/TestNet", build_vignettes=TRUE)
+devtools::install_github("yijuanhu/TestNet")
 

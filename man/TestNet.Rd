@@ -2,46 +2,46 @@
 % Please edit documentation in R/TestNet.R
 \name{TestNet}
 \alias{TestNet}
-\title{A testing method for inference of microbial networks}
+\title{A testing method for inferring microbial networks}
 \usage{
 TestNet(
   otu.tab,
   clustered.data = FALSE,
-  CTRL = NULL,
+  cluster.id = NULL,
   fdr.nominal = 0.1,
   n.perm.max = NULL,
   seed = 123
 )
 }
 \arguments{
-\item{otu.tab}{the \code{n.obs} by \code{n.otu} matrix of read counts.}
+\item{otu.tab}{An \code{n.sam} by \code{n.otu} matrix of read counts.}
 
-\item{clustered.data}{a logical variable indicating whether the samples are clustered. The default is FALSE.}
+\item{clustered.data}{A logical variable indicating whether the samples are clustered. The default is FALSE.}
 
-\item{CTRL}{the phylogeneic tree. The default is NULL.}
+\item{cluster.id}{An array of \code{n.sam} cluster identifiers, used in the permutation procedure to shuffle the samples as a whole across clusters and simultaneously shuffle the samples within clusters when \code{clustered.data=TRUE}. The default is NULL.}
 
-\item{fdr.nominal}{the nominal FDR level. The default is 0.1.}
+\item{fdr.nominal}{The nominal FDR level. The default is 0.1.}
 
-\item{n.perm.max}{the maximum number of permutation replicates. The default is NULL, in which case a maximum of \code{n.otu} * \code{n.rej.stop} * (1/\code{fdr.nominal}) are used, where \code{n.rej.stop} is set to 20.}
+\item{n.perm.max}{The maximum number of permutation replicates. The default is NULL, in which case a maximum of \code{n.otu} * \code{n.rej.stop} * (1/\code{fdr.nominal}) are used, where \code{n.rej.stop} is set to 20.}
 
-\item{seed}{a single-value integer seed for the random process of drawing permutation replicates. 
-The seed is user supplied or internally generated. The default is 123.}
+\item{seed}{a single-value integer seed for the random process of drawing permutation replicates. The default is 123.}
 }
 \value{
 a list consisting of 
-  \item{p.linear}{a \code{n.otu} by \code{n.otu} matrix of p-values for the linear test}
-  \item{q.linear}{a matrix of q-values for the linear test}
-  \item{p.nonlinear}{a matrix of p-values for the nonlinear test}
-  \item{q.nonlinear}{a matrix of q-values for the nonlinear test}
-  \item{p.omni}{a matrix of p-values for the omnibus test}
-  \item{q.omni}{a matrix of q-values for the omnibus test}
-  \item{which.pmin}{a \code{n.otu} by \code{n.otu} matrix of 0, 1, and 2 values, where 0 and 1 indicate that the nonlinear and linear tests, 
+  \item{p.linear}{An \code{n.otu} by \code{n.otu} matrix of p-values for the linear tests}
+  \item{q.linear}{An \code{n.otu} by \code{n.otu} matrix of q-values for the linear tests}
+  \item{p.nonlinear}{An \code{n.otu} by \code{n.otu} matrix of p-values for the nonlinear tests}
+  \item{q.nonlinear}{An \code{n.otu} by \code{n.otu} matrix of q-values for the nonlinear tests}
+  \item{p.omni}{An \code{n.otu} by \code{n.otu} matrix of p-values for the omnibus tests}
+  \item{q.omni}{An \code{n.otu} by \code{n.otu} matrix of q-values for the omnibus tests}
+  \item{which.pmin}{An \code{n.otu} by \code{n.otu} matrix of 0, 1, and 2 values, where 0 and 1 indicate that the nonlinear and linear tests, 
 respectively, achieved the minimum p-value between the two, and 2 indicates that both tests yielded similar p-values.}
 }
 \description{
-This function generates a p-value and q-value for each (linear, nonlinear, and omnibus) test of a pair of taxa.
+This function generates a p-value and a q-value for each (linear, nonlinear, or omnibus) test of a pair of taxa.
 }
 \examples{
+data(sim.otu.tab)
 TestNet.res <- TestNet(otu.tab = sim.otu.tab)
 }
 \references{
