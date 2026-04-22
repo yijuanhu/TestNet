@@ -1,6 +1,6 @@
 Package: TestNet
 Type: Package
-Title: A testing method for inferring microbial networks using compositional data with false discovery rate control
+Title: A method for inferring microbial networks with false discovery rate control for clustered and unclustered samples
 Version: 1.0
 Authors@R: 
     person("Yi-Juan", "Hu", role = c("aut", "cre"), email = "yijuan.hu@emory.edu")
@@ -11,7 +11,9 @@ Depends: R (>= 3.5.0)
 Imports:
     permute,
     matrixStats,
-    dcov
+    dcov,
+    stats,
+    utils
 Suggests:
     R.rsp,
     testthat

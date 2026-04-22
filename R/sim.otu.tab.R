@@ -1,12 +1,12 @@
 #' OTU count table of the simulated microbiome samples
 #'
-#' This table contains read count data simulated for 100 samples and 100 OTUs and under the AR1 dependence structure
+#' This table contains read count data simulated for 100 samples and 46 OTUs and under the AR1 dependence structure
 #'
 #' @docType data
 #'
 #' @usage data("sim.otu.tab")
 #'
-#' @format A data frame with 100 observations on 100 variables.
+#' @format A data frame with 100 observations on 46 OTUs
 #'
 #' @keywords datasets
 #' 

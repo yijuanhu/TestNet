@@ -45,11 +45,10 @@ data(sim.otu.tab)
 TestNet.res <- TestNet(otu.tab = sim.otu.tab)
 }
 \references{
-Su C, He M, Van Doren VE, Kelley CF, Hu YJ (2024). A general testing method for inference of microbial networks with compositional data.
-  XXX.
+Su C, Mao Y, He M, Van Doren VE, Kelley CF, Hu YJ (2026). TestNet: a method for inferring microbial networks with false discovery rate control for clustered and unclustered samples. Genome Biology, in press.
 }
 \author{
-Yi-Juan Hu <yijuan.hu@emory.edu>
+Yi-Juan Hu <yijuanhu@bicmr.pku.edu.cn>
 }
 \keyword{microbiome,}
 \keyword{network}

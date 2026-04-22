@@ -18,25 +18,45 @@
 #'   \item{which.pmin}{An \code{n.otu} by \code{n.otu} matrix of 0, 1, and 2 values, where 0 and 1 indicate that the nonlinear and linear tests, 
 #' respectively, achieved the minimum p-value between the two, and 2 indicates that both tests yielded similar p-values.}
 #' @keywords microbiome, network
-#' @author Yi-Juan Hu <yijuan.hu@emory.edu>
+#' @author Yi-Juan Hu <yijuanhu@bicmr.pku.edu.cn>
 #' @importFrom permute shuffleSet how Plots Within
 #' @importFrom stats p.adjust
-#' @import matrixStats
+#' @importFrom dcov dcov2d
+#' @importFrom matrixStats rowRanks
+#' @importFrom utils combn
 #' @export
-#' @references Su C, He M, Van Doren VE, Kelley CF, Hu YJ (2024). A general testing method for inference of microbial networks with compositional data.
-#'   XXX.
+#' @references Su C, Mao Y, He M, Van Doren VE, Kelley CF, Hu YJ (2026). TestNet: a method for inferring microbial networks with false discovery rate control for clustered and unclustered samples. Genome Biology, in press.
 #' @examples
 #' data(sim.otu.tab)
 #' TestNet.res <- TestNet(otu.tab = sim.otu.tab)
+
+
 TestNet <- function(otu.tab, clustered.data = FALSE, cluster.id = NULL, fdr.nominal = 0.1, n.perm.max = NULL, seed = 123) {
     
-    n <- nrow(otu.tab)
-    J1 <- ncol(otu.tab)
-    absence <- 1*(otu.tab==0)
+    
+    otu.tab.name <- deparse(substitute(otu.tab))
+    cluster.id.name <- deparse(substitute(cluster.id))
+    
+    if (is.null(otu.tab)) stop(sprintf("%s must not be NULL", otu.tab.name), call. = FALSE)
+    
+    if (!is.matrix(otu.tab) && !is.data.frame(otu.tab)) stop("otu.tab must be a matrix or data frame.")
+    otu.tab <- as.matrix(otu.tab)
+    
+    if (any(otu.tab < 0, na.rm = TRUE)) stop("otu.tab contains negative values.")
+    if (any(rowSums(otu.tab) == 0)) stop("otu.tab contains at least one sample with total count zero.")
+    
+    if (clustered.data) {
+        if (is.null(cluster.id)) stop("cluster.id must be provided when clustered.data = TRUE.")
+        if (length(cluster.id) != nrow(otu.tab)) stop(sprintf("length(%s) must equal nrow(%s).", cluster.id.name, otu.tab.name), call. = FALSE)
+    }
     
     #----------------------
     # observed statistics
     #----------------------
+    
+    n <- nrow(otu.tab)
+    J1 <- ncol(otu.tab)
+    absence <- 1*(otu.tab==0)
     
     P <- (otu.tab + 0.5)/rowSums(otu.tab + 0.5)
     logP <- log(P)
@@ -48,54 +68,52 @@ TestNet <- function(otu.tab, clustered.data = FALSE, cluster.id = NULL, fdr.nomi
     cov_clrP_l0 <- matrix(NA, nrow=J1, ncol=J1)
     for (k in 1:(J1-1)) for (l in (k+1):J1) cov_clrP_l0[l,k] <- dcov::dcov2d(clrP_mod[,k], clrP_mod[,l]) 
     
-    otu.l1 = cov_clrP_l1[lower.tri(cov_clrP_l1)] # 'otu' = 'pair' = 'test'
-    otu.l0 = cov_clrP_l0[lower.tri(cov_clrP_l0)]
+    otu.l1 <- cov_clrP_l1[lower.tri(cov_clrP_l1)] # 'otu' = 'pair' = 'test'
+    otu.l0 <- cov_clrP_l0[lower.tri(cov_clrP_l0)]
     
     #------------------------
-    # permutation statiatics
+    # permutation statistics
     #------------------------
     
-    n.otu = J1*(J1-1)/2
-    inv.J1 = 1/J1
-    correction = sqrt(J1)/sqrt(J1-1)
+    n.otu <- J1*(J1-1)/2
+    correction <- sqrt(J1)/sqrt(J1-1)
     
-    n.rej.stop = 20
-    n.perm.block = 100
-    n.perm.minP = 100   
-    tol.eq = 10^-6
-    if (is.null(n.perm.max)) n.perm.max = n.otu * n.rej.stop * (1/fdr.nominal)
+    n.rej.stop <- 20
+    n.perm.block <- 100
+    n.perm.minP <- 100   
+    tol.eq <- 10^-6
+    if (is.null(n.perm.max)) n.perm.max <- n.otu * n.rej.stop * (1/fdr.nominal)
     
-    n.otu.smallp = n.otu
-    otu.smallp = 1:n.otu
-    otu.smallp.2d = combn(seq_len(J1), 2)
+    n.otu.smallp <- n.otu
+    otu.smallp <- 1:n.otu
+    otu.smallp.2d <- utils::combn(seq_len(J1), 2)
 
-    perm_absence = matrix(0, nrow=n, ncol=J1)
-    perm_clrP = matrix(0, nrow=n, ncol=J1)
-    otu.l1.perm = matrix(NA, nrow=n.otu, ncol=n.perm.minP)
-    otu.l0.perm = matrix(NA, nrow=n.otu, ncol=n.perm.minP)
-    Aset.l1 = rep(TRUE, n.otu)
-    Aset.l0 = rep(TRUE, n.otu)
-    Aset.omni = rep(TRUE, n.otu)
-    p.otu.l1 = rep(NA, n.otu)
-    p.otu.l0 = rep(NA, n.otu)
-    p.otu.omni = rep(NA, n.otu)
-    n.otu.l1 = rep(0, n.otu)
-    n.otu.l0 = rep(0, n.otu)
-    n.otu.l1.left = rep(0, n.otu)
-    n.otu.l1.right = rep(0, n.otu)
-    which.pmin.otu = rep(NA, n.otu)
-    n.perm.completed = 0
-    otu.tests.stopped = FALSE
+    perm_absence <- matrix(0, nrow=n, ncol=J1)
+    perm_clrP <- matrix(0, nrow=n, ncol=J1)
+    otu.l1.perm <- matrix(NA, nrow=n.otu, ncol=n.perm.minP)
+    otu.l0.perm <- matrix(NA, nrow=n.otu, ncol=n.perm.minP)
+    Aset.l1 <- rep(TRUE, n.otu)
+    Aset.l0 <- rep(TRUE, n.otu)
+    Aset.omni <- rep(TRUE, n.otu)
+    p.otu.l1 <- rep(NA, n.otu)
+    p.otu.l0 <- rep(NA, n.otu)
+    p.otu.omni <- rep(NA, n.otu)
+    n.otu.l1 <- rep(0, n.otu)
+    n.otu.l0 <- rep(0, n.otu)
+    n.otu.l1.left <- rep(0, n.otu)
+    n.otu.l1.right <- rep(0, n.otu)
+    which.pmin.otu <- rep(NA, n.otu)
+    n.perm.completed <- 0
     
     set.seed(seed)
     
     if (clustered.data) {
         ttl <- J1*1000
-        CTRL = how( plots=Plots(cluster.id, type="free"), within=Within(type="free"))
-        perm.ttl <- t(shuffleSet(n, ttl, CTRL))
+        CTRL <- permute::how( plots=permute::Plots(cluster.id, type="free"), within=permute::Within(type="free"))
+        perm.ttl <- t(permute::shuffleSet(n, ttl, CTRL))
     } else {
         ttl <- J1*1000
-        perm.ttl <- t(shuffleSet(n, ttl))
+        perm.ttl <- t(permute::shuffleSet(n, ttl))
     }
     
     #------------------------------------------------
@@ -105,7 +123,7 @@ TestNet <- function(otu.tab, clustered.data = FALSE, cluster.id = NULL, fdr.nomi
     for (i.sim in 1:n.perm.max) {
         
         if (i.sim == 10001) {
-            n.perm.block = 1000
+            n.perm.block <- 1000
         }
         
         perm <- perm.ttl[,sample(1:ttl, J1, replace=TRUE)]
@@ -118,7 +136,7 @@ TestNet <- function(otu.tab, clustered.data = FALSE, cluster.id = NULL, fdr.nomi
         perm_impute <- colMeans(ifelse(perm_absence, perm_clrP_tmp, NA), na.rm=TRUE)
         perm_clrP_mod <- t(ifelse(t(perm_absence), perm_impute, t(perm_clrP_tmp))) # de-correlated
         
-        n.perm.completed = n.perm.completed + 1
+        n.perm.completed <- n.perm.completed + 1
         
         #------------------------------------------------
         # reduce OTUs to speed-up computation
@@ -126,34 +144,34 @@ TestNet <- function(otu.tab, clustered.data = FALSE, cluster.id = NULL, fdr.nomi
         
         if (i.sim >= n.perm.minP+1 & i.sim %% n.perm.block == 1) { # 1001, 2001, 3001, ...
             
-            w.otu.smallp = which(apply(rbind(Aset.l1, Aset.l0, Aset.omni), 2, any))
+            w.otu.smallp <- which(apply(rbind(Aset.l1, Aset.l0, Aset.omni), 2, any))
             
             cat("number of tests do not meet early stopping criterion:", length(w.otu.smallp), "\n")
             
             if (length(w.otu.smallp) < n.otu.smallp) {
             
-                otu.smallp = otu.smallp[w.otu.smallp]
-                otu.smallp.2d = otu.smallp.2d[,w.otu.smallp,drop=FALSE]
-                n.otu.smallp = length(otu.smallp)
-                inv.n.otu.smallp = 1/n.otu.smallp
+                otu.smallp <- otu.smallp[w.otu.smallp]
+                otu.smallp.2d <- otu.smallp.2d[,w.otu.smallp,drop=FALSE]
+                n.otu.smallp <- length(otu.smallp)
+                inv.n.otu.smallp <- 1/n.otu.smallp
                 
-                n.otu.l1.left = n.otu.l1.left[w.otu.smallp]
-                n.otu.l1.right = n.otu.l1.right[w.otu.smallp]
-                n.otu.l1 = n.otu.l1[w.otu.smallp]
-                n.otu.l0 = n.otu.l0[w.otu.smallp]
-                Aset.l1 = Aset.l1[w.otu.smallp]
-                Aset.l0 = Aset.l0[w.otu.smallp]
-                Aset.omni = Aset.omni[w.otu.smallp]
+                n.otu.l1.left <- n.otu.l1.left[w.otu.smallp]
+                n.otu.l1.right <- n.otu.l1.right[w.otu.smallp]
+                n.otu.l1 <- n.otu.l1[w.otu.smallp]
+                n.otu.l0 <- n.otu.l0[w.otu.smallp]
+                Aset.l1 <- Aset.l1[w.otu.smallp]
+                Aset.l0 <- Aset.l0[w.otu.smallp]
+                Aset.omni <- Aset.omni[w.otu.smallp]
             }
             
-            otu.l1.perm.smallp = otu.l1.perm[w.otu.smallp,1:(i.sim-1),drop=FALSE]
-            otu.l1.perm = matrix(NA, nrow=n.otu.smallp, ncol=i.sim-1+n.perm.block)
-            otu.l1.perm[,1:(i.sim-1)] = otu.l1.perm.smallp
+            otu.l1.perm.smallp <- otu.l1.perm[w.otu.smallp,1:(i.sim-1),drop=FALSE]
+            otu.l1.perm <- matrix(NA, nrow=n.otu.smallp, ncol=i.sim-1+n.perm.block)
+            otu.l1.perm[,1:(i.sim-1)] <- otu.l1.perm.smallp
             rm(otu.l1.perm.smallp)
             
-            otu.l0.perm.smallp = otu.l0.perm[w.otu.smallp,1:(i.sim-1),drop=FALSE]
-            otu.l0.perm = matrix(NA, nrow=n.otu.smallp, ncol=i.sim-1+n.perm.block)
-            otu.l0.perm[,1:(i.sim-1)] = otu.l0.perm.smallp
+            otu.l0.perm.smallp <- otu.l0.perm[w.otu.smallp,1:(i.sim-1),drop=FALSE]
+            otu.l0.perm <- matrix(NA, nrow=n.otu.smallp, ncol=i.sim-1+n.perm.block)
+            otu.l0.perm[,1:(i.sim-1)] <- otu.l0.perm.smallp
             rm(otu.l0.perm.smallp)
         }
         
@@ -182,7 +200,7 @@ TestNet <- function(otu.tab, clustered.data = FALSE, cluster.id = NULL, fdr.nomi
         n.otu.l1 <- pmin(n.otu.l1.left, n.otu.l1.right)*2
 
         diff.l0 <- otu.l0.perm[,i.sim] - c(otu.l0[otu.smallp])
-        n.otu.l0 = n.otu.l0 + (diff.l0 >= tol.eq) + 0.5*(abs(diff.l0) < tol.eq)
+        n.otu.l0 <- n.otu.l0 + (diff.l0 >= tol.eq) + 0.5*(abs(diff.l0) < tol.eq)
 
         #--------------------------------------------------
         # check if the sequential procedure can be stopped
@@ -192,8 +210,8 @@ TestNet <- function(otu.tab, clustered.data = FALSE, cluster.id = NULL, fdr.nomi
             
             cat("permutations:", i.sim, "\n")
             
-            inv.n.perm.completed = 1/n.perm.completed
-            inv.n.perm.completed.1 = 1/(n.perm.completed+1)
+            inv.n.perm.completed <- 1/n.perm.completed
+            inv.n.perm.completed.1 <- 1/(n.perm.completed+1)
 
             if (any(Aset.l1)) {
                 AtoB.l1 <- Aset.l1 & (n.otu.l1 >= n.rej.stop)
@@ -217,8 +235,8 @@ TestNet <- function(otu.tab, clustered.data = FALSE, cluster.id = NULL, fdr.nomi
                 pmin.otu.omni <- pmin(n.otu.l1, n.otu.l0)
                 which.pmin.otu[otu.smallp] <- 1*(pmin.otu.omni == n.otu.l1 & pmin.otu.omni != n.otu.l0) + 2*(n.otu.l1 == n.otu.l0)
                 
-                pnull.otu.l1 <- n.perm.completed + 0.5 - rowRanks(abs(otu.l1.perm[,1:n.perm.completed,drop=FALSE]), ties.method="average")
-                pnull.otu.l0 <- n.perm.completed + 0.5 - rowRanks(otu.l0.perm[,1:n.perm.completed,drop=FALSE], ties.method="average")
+                pnull.otu.l1 <- n.perm.completed + 0.5 - matrixStats::rowRanks(abs(otu.l1.perm[,1:n.perm.completed,drop=FALSE]), ties.method="average")
+                pnull.otu.l0 <- n.perm.completed + 0.5 - matrixStats::rowRanks(otu.l0.perm[,1:n.perm.completed,drop=FALSE], ties.method="average")
                 pnullmin.otu.omni <- pmin(pnull.otu.l1, pnull.otu.l0)
                 
                 n.otu.omni <- rowSums( (pnullmin.otu.omni < c(pmin.otu.omni) - tol.eq)) + 0.5 * rowSums( (abs(pnullmin.otu.omni - c(pmin.otu.omni)) < tol.eq))
@@ -234,7 +252,6 @@ TestNet <- function(otu.tab, clustered.data = FALSE, cluster.id = NULL, fdr.nomi
             }
                 
             if (!any(Aset.l1) & !any(Aset.l0) & !any(Aset.omni)) {
-                otu.tests.stopped = TRUE 
                 cat("test stopped at permutation", i.sim, "\n")
                 break
             }
@@ -272,10 +289,13 @@ TestNet <- function(otu.tab, clustered.data = FALSE, cluster.id = NULL, fdr.nomi
     which.pmin <- matrix(NA, J1, J1)
     which.pmin[lower.tri(which.pmin)] <- which.pmin.otu
     
-    return(list(p.linear=p.linear, q.linear=q.linear, 
-                p.nonlinear=p.nonlinear, q.nonlinear=q.nonlinear, 
-                p.omni=p.omni, q.omni=q.omni, 
-                which.pmin=which.pmin)) 
+    return(list(p.linear = p.linear, 
+                q.linear = q.linear, 
+                p.nonlinear = p.nonlinear, 
+                q.nonlinear = q.nonlinear, 
+                p.omni = p.omni, 
+                q.omni = q.omni, 
+                which.pmin = which.pmin)) 
     
 } # TestNet
 
@@ -299,6 +319,7 @@ fdr.Sandve = function(p.otu) {
     mat = match(p.otu, p.otu.sort)   
     qval.orig = qval.sort[mat]
     results = qval.orig
+    
     return(results)
     
 } # fdr.Sandve

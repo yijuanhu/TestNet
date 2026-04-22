@@ -5,13 +5,13 @@
 \alias{sim.otu.tab}
 \title{OTU count table of the simulated microbiome samples}
 \format{
-A data frame with 100 observations on 100 variables.
+A data frame with 100 observations on 46 OTUs
 }
 \usage{
 data("sim.otu.tab")
 }
 \description{
-This table contains read count data simulated for 100 samples and 100 OTUs and under the AR1 dependence structure
+This table contains read count data simulated for 100 samples and 46 OTUs and under the AR1 dependence structure
 }
 \examples{
 data(sim.otu.tab)
